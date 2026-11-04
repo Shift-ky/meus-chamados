@@ -1,6 +1,7 @@
 import fs from 'node:fs';import {DatabaseSync} from 'node:sqlite';import assert from 'node:assert/strict';
 const sqlite=new DatabaseSync(':memory:');sqlite.exec(fs.readFileSync('drizzle/0000_personal_workspace.sql','utf8'));
 sqlite.exec(fs.readFileSync('drizzle/0001_note_history.sql','utf8'));
+sqlite.exec(fs.readFileSync('drizzle/0002_note_deletion.sql','utf8'));
 const DB={prepare(sql){let args=[];return{bind(...values){args=values;return this},async all(){return {results:sqlite.prepare(sql).all(...args)}},async first(){return sqlite.prepare(sql).get(...args)},async run(){const result=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(result.changes)}}}}}};
 const {default:worker}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('dist/server/index.js')).toString('base64'));
 const req=(path,method='GET',body,origin='https://example.test')=>worker.fetch(new Request('https://example.test'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}),{DB});
@@ -23,3 +24,10 @@ await req('/api/notes/'+first.id,'PUT',{content:'Texto editado'});
 history=await (await req('/api/notes')).json();assert.equal(history.length,3);assert.equal(history.find(n=>n.id===first.id).content,'Texto editado');assert(history.some(n=>n.id==='original-notepad'));
 assert.equal((await req('/api/notes','POST',{content:'  '})).status,400);
 console.log('Passed: legacy preservation, separate saved notes, history and editing');
+
+assert.equal((await req('/api/notes/'+first.id,'DELETE')).status,200);
+assert(!(await (await req('/api/notes')).json()).some(n=>n.id===first.id));
+await req('/api/notes/original-notepad','DELETE');
+assert(!(await (await req('/api/notes')).json()).some(n=>n.id==='original-notepad'));
+assert.equal((await req('/api/notes/'+first.id,'PUT',{content:'Deleted'})).status,404);
+console.log('Passed: history deletion, no legacy resurrection, deleted note cannot be edited');

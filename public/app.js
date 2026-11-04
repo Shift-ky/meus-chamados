@@ -46,7 +46,7 @@ $('import-file').onchange=async()=>{
 };
 let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0,notes=[],editingId=null;
 function noteStatus(text,error=false){$('note-status').textContent=text;$('note-status').classList.toggle('error',error)}
-function noteLock(){$('notepad').disabled=!noteReady||noteSaving;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim();$('note-retry').hidden=noteReady||noteSaving;$('note-cancel').disabled=noteSaving}
+function noteLock(){$('notepad').disabled=!noteReady||noteSaving;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim();$('note-retry').hidden=noteReady||noteSaving;$('note-cancel').disabled=noteSaving;$('note-template').disabled=!noteReady||noteSaving}
 function clearDraft(){editingId=null;noteDirty=false;$('notepad').value='';$('note-label').textContent='Nova anotação';$('note-save').textContent='Salvar anotação';$('note-cancel').hidden=true;noteLock()}
 function renderNotes(){
  $('note-count').textContent=`(${notes.length})`;$('note-history-list').replaceChildren();
@@ -57,7 +57,8 @@ function renderNotes(){
   date.textContent=new Date(note.created_at).toLocaleString('pt-BR');date.style.cssText='display:block;color:#98a39c;font-size:11px;margin-top:6px';summary.append(date);
   text.textContent=note.content;text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:16px 0';edit.className='plain';edit.textContent='Editar';
   edit.onclick=()=>{if(noteSaving)return;if(noteDirty&&!confirm('Substituir o rascunho atual por esta anotação?'))return;editingId=note.id;$('notepad').value=note.content;noteDirty=false;$('note-label').textContent='Editando anotação salva';$('note-save').textContent='Salvar alterações';$('note-cancel').hidden=false;noteStatus('Edite o texto e salve as alterações.');noteLock();$('notepad').focus();$('notepad').scrollIntoView({behavior:'smooth',block:'center'})};
-  detail.append(summary,text,edit);$('note-history-list').append(detail);
+  const remove=document.createElement('button');remove.className='plain';remove.textContent='Excluir';remove.style.cssText='margin-left:8px;color:#96766e';remove.onclick=async()=>{if(noteSaving||!confirm('Excluir esta anotação do histórico?'))return;noteSaving=true;noteLock();try{const {error}=await api('/api/notes/'+encodeURIComponent(note.id),'DELETE');if(error)throw error;notes=notes.filter(n=>n.id!==note.id);noteSaving=false;if(editingId===note.id)clearDraft();renderNotes();noteStatus('Anotação excluída do histórico.')}catch{noteStatus('Não foi possível excluir. Tente novamente.',true)}finally{noteSaving=false;noteLock()}};
+  detail.append(summary,text,edit,remove);$('note-history-list').append(detail);
  }
 }
 async function loadNotepad(){
@@ -65,6 +66,7 @@ async function loadNotepad(){
  try{const {data,error}=await api('/api/notes');if(error)throw error;notes=data;noteReady=true;renderNotes();noteStatus('Escreva e salve. Cada anotação ficará no histórico.')}catch{noteStatus('Não foi possível carregar o histórico. Tente novamente.',true)}finally{noteLock()}
 }
 $('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};$('note-retry').onclick=loadNotepad;
+$('note-template').onclick=()=>{if(!noteReady||noteSaving)return;const field=$('notepad'),template='CLIENTE: \nSOLICITANTE: \nTELEFONE: \nPROBLEMA: ';if(field.value.length+(field.value?'\n\n':'').length+template.length>field.maxLength){noteStatus('Não há espaço para inserir o modelo.',true);return}field.value+=(field.value?'\n\n':'')+template;noteDirty=true;noteStatus('Modelo inserido. Preencha os campos e salve.');noteLock();field.focus()};
 $('note-cancel').onclick=()=>{if(noteDirty&&!confirm('Descartar as alterações não salvas?'))return;clearDraft();noteStatus('Pronto para uma nova anotação.')};
 $('note-save').onclick=async()=>{
  if(!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim())return;
