@@ -1,35 +1,22 @@
 # my work
 
-Aplicação pessoal para registrar tickets fechados e acompanhar o total por dia.
+Controle pessoal de chamados fechados e bloco de notas livre. A aplicação abre diretamente, sem cadastro ou senha própria. O Site permanece privado para o proprietário na hospedagem Sites.
 
-## Recursos
+Os registros ficam no banco D1 da hospedagem, disponíveis entre sessões e dispositivos autorizados. Não dependem de localStorage. O Supabase anterior não é mais utilizado; estava sem registros quando a mudança foi feita.
 
-- Cadastro e login com e-mail e senha no Supabase.
-- Chamados em PostgreSQL, vinculados ao usuário autenticado.
-- Consulta por dia, total de hoje, exclusão e proteção contra duplicados.
-- Exportação e importação do CSV da versão anterior.
-- Regras no banco impedem o acesso aos chamados de outra conta.
+## Funcionalidades
 
-## Executar
+Registro e consulta de tickets por dia, prevenção de duplicados, exclusão, importação/exportação CSV e bloco de notas com botão Salvar anotações.
 
-Sirva a pasta `dist` por HTTP. Por exemplo, com Python instalado: `python -m http.server 8080 --directory dist` e abra http://localhost:8080.
+## Projeto
 
-## Banco
+- public/: interface e interações.
+- worker/index.js: rotas e acesso ao banco.
+- drizzle/: migrações SQLite/D1.
+- .openai/hosting.json: configuração do Site privado e binding DB.
+- build.cjs: gera o Worker com a interface incorporada.
+- check.mjs: verifica persistência, validação e proteção de origem em SQLite em memória.
 
-O projeto Supabase separado é `bqdygjinznkuogecsngx`. A estrutura está em `schema.sql` e já foi aplicada. Em um novo projeto, aplique esse arquivo e altere `dist/config.js` com a URL e a chave publicável. Nunca use chaves secretas ou service_role no navegador.
+Execute `node build.cjs` e `node check.mjs` na pasta do projeto. O teste requer Node.js com node:sqlite. A publicação pela ferramenta Sites provisiona o banco e aplica as migrações. Os endpoints pressupõem a proteção de acesso privado da hospedagem; preserve essa configuração.
 
-Para começar, clique em **Criar minha conta**, confirme o e-mail e entre. Se o Supabase exigir configuração do remetente de e-mail ou do endereço de confirmação, faça isso no painel de Authentication. Nenhuma conta pessoal é criada automaticamente por este código.
-
-Os registros ficam no banco e não dependem do armazenamento local do navegador. A sessão de login é gerenciada pelo Supabase. O código no GitHub não é um backup dos registros; exporte o CSV periodicamente e verifique a política de backup do seu plano Supabase.
-
-## Migrar registros antigos
-
-Abra a versão anterior no mesmo navegador em que registrou os tickets, exporte o CSV, entre no my work e clique em **Importar CSV**. A importação mantém os registros originais e ignora tickets já existentes.
-
-## Hospedagem
-
-Publique a pasta `dist` em um serviço de hospedagem estática. O arquivo `.openai/hosting.json` pertence à hospedagem Sites. GitHub armazena o código; o banco de dados fica no Supabase.
-
-## Bloco de notas
-
-Anotações livres em um bloco pessoal, independente dos tickets. Clique em **Salvar anotações** para guardar o texto no banco. O aplicativo avisa antes de sair com alterações não salvas. Cada conta acessa apenas o próprio bloco.
+Os arquivos schema.sql e notepad.sql são do banco Supabase anterior e não são utilizados pela versão atual. O código GitHub não contém seus registros. Exporte os tickets em CSV quando precisar de uma cópia.

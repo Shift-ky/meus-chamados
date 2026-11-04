@@ -1,0 +1,16 @@
+import fs from 'node:fs';import {DatabaseSync} from 'node:sqlite';import assert from 'node:assert/strict';
+const sqlite=new DatabaseSync(':memory:');sqlite.exec(fs.readFileSync('drizzle/0000_personal_workspace.sql','utf8'));
+const DB={prepare(sql){let args=[];return{bind(...values){args=values;return this},async all(){return {results:sqlite.prepare(sql).all(...args)}},async first(){return sqlite.prepare(sql).get(...args)},async run(){const result=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(result.changes)}}}}}};
+const {default:worker}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('dist/server/index.js')).toString('base64'));
+const req=(path,method='GET',body,origin='https://example.test')=>worker.fetch(new Request('https://example.test'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}),{DB});
+assert(!(await (await req('/')).text()).includes('id="auth"'));
+assert.equal((await req('/api/tickets','POST',{number:'123',closed_on:'2026-11-04'})).status,201);
+assert.equal((await req('/api/tickets','POST',{number:'123',closed_on:'2026-11-04'})).status,409);
+let rows=await (await req('/api/tickets')).json();assert.equal(rows.length,1);
+assert.equal((await req('/api/tickets','POST',{number:'bad',closed_on:'2026-02-30'})).status,400);
+assert.equal((await req('/api/notepad','PUT',{content:'Livre\nSegunda linha'})).status,200);
+assert.equal((await (await req('/api/notepad')).json()).content,'Livre\nSegunda linha');
+assert.equal((await req('/api/notepad','PUT',{content:'intruso'},'https://other.test')).status,403);
+assert.equal((await req('/api/tickets/'+rows[0].id,'DELETE')).status,200);
+assert.equal((await (await req('/api/tickets')).json()).length,0);
+console.log('Passed: no login, persistence, duplicates, date validation, delete, cross-origin protection');
