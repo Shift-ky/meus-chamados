@@ -45,13 +45,15 @@ $('import-file').onchange=async()=>{
  }catch(error){await load();message(error.message||'Não foi possível importar o arquivo.',true)}finally{busy=false;lock();$('import-file').value=''}
 };
 let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0;
+function foldNote(collapsed){$('note-editor').hidden=collapsed;$('note-preview').hidden=!collapsed;$('note-preview').textContent=$('notepad').value.trim().replace(/\s+/g,' ').slice(0,100)||'Nenhuma anotação salva.';$('note-toggle').textContent=collapsed?'Abrir / editar':'Recolher';$('note-toggle').setAttribute('aria-expanded',String(!collapsed))}
+$('note-toggle').onclick=()=>{foldNote(!$('note-editor').hidden);if(!$('note-editor').hidden)$('notepad').focus()};
 function noteStatus(text,error=false){$('note-status').textContent=text;$('note-status').classList.toggle('error',error)}
 function noteLock(){$('notepad').disabled=!noteReady||noteSaving||!user;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!user;$('note-retry').hidden=noteReady||noteSaving}
 function resetNotepad(){noteVersion++;noteReady=false;noteSaving=false;noteDirty=false;$('notepad').value='';noteStatus('');noteLock()}
 async function loadNotepad(){
  const owner=user?.id,version=++noteVersion;if(!owner)return;
  noteReady=false;noteLock();noteStatus('Carregando suas anotações…');
- try{const {data,error}=await api('/api/notepad');if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;$('notepad').value=data?.content||'';noteReady=true;noteDirty=false;noteStatus(data?'Anotações carregadas.':'Escreva o que precisar e clique em Salvar anotações.')}catch{if(version===noteVersion)noteStatus('Não foi possível carregar suas anotações. Tente novamente.',true)}finally{noteLock()}
+ try{const {data,error}=await api('/api/notepad');if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;$('notepad').value=data?.content||'';noteReady=true;noteDirty=false;foldNote(!!data?.content?.trim());noteStatus(data?'Anotações carregadas.':'Escreva o que precisar e clique em Salvar anotações.')}catch{if(version===noteVersion)noteStatus('Não foi possível carregar suas anotações. Tente novamente.',true)}finally{noteLock()}
 }
 $('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};
 $('note-retry').onclick=loadNotepad;
@@ -59,7 +61,7 @@ $('note-save').onclick=async()=>{
  if(!user||!noteReady||noteSaving||!noteDirty)return;
  const owner=user.id,version=noteVersion,content=$('notepad').value;
  noteSaving=true;noteLock();noteStatus('Salvando anotações…');
- try{const {error}=await api('/api/notepad','PUT',{content});if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;noteDirty=false;noteStatus('Anotações salvas no banco de dados.')}catch{if(version===noteVersion)noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{if(version===noteVersion){noteSaving=false;noteLock()}}
+ try{const {error}=await api('/api/notepad','PUT',{content});if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;noteDirty=false;noteStatus('Anotações salvas no banco de dados.');foldNote(true);$('note-toggle').focus()}catch{if(version===noteVersion)noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{if(version===noteVersion){noteSaving=false;noteLock()}}
 };
 window.addEventListener('beforeunload',event=>{if(noteDirty){event.preventDefault();event.returnValue=''}});
 render();lock();
