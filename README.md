@@ -20,3 +20,6 @@ Registro e consulta de tickets por dia, prevenção de duplicados, exclusão, im
 Execute `node build.cjs` e `node check.mjs` na pasta do projeto. O teste requer Node.js com node:sqlite. A publicação pela ferramenta Sites provisiona o banco e aplica as migrações. Os endpoints pressupõem a proteção de acesso privado da hospedagem; preserve essa configuração.
 
 Os arquivos schema.sql e notepad.sql são do banco Supabase anterior e não são utilizados pela versão atual. O código GitHub não contém seus registros. Exporte os tickets em CSV quando precisar de uma cópia.
+
+## Histórico de anotações
+Cada salvamento cria uma anotação separada e libera o campo. O histórico fica recolhido; abra uma anotação e clique em Editar para alterar o texto salvo. O bloco antigo é preservado automaticamente como uma anotação do histórico. A lista de chamados também inicia recolhida.

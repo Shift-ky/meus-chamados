@@ -44,25 +44,34 @@ $('import-file').onchange=async()=>{
  await load();message(`${imported} chamado(s) importado(s). Duplicados foram ignorados.`);
  }catch(error){await load();message(error.message||'Não foi possível importar o arquivo.',true)}finally{busy=false;lock();$('import-file').value=''}
 };
-let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0;
-function foldNote(collapsed){$('note-editor').hidden=collapsed;$('note-preview').hidden=!collapsed;$('note-preview').textContent=$('notepad').value.trim().replace(/\s+/g,' ').slice(0,100)||'Nenhuma anotação salva.';$('note-toggle').textContent=collapsed?'Abrir / editar':'Recolher';$('note-toggle').setAttribute('aria-expanded',String(!collapsed))}
-$('note-toggle').onclick=()=>{foldNote(!$('note-editor').hidden);if(!$('note-editor').hidden)$('notepad').focus()};
+let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0,notes=[],editingId=null;
 function noteStatus(text,error=false){$('note-status').textContent=text;$('note-status').classList.toggle('error',error)}
-function noteLock(){$('notepad').disabled=!noteReady||noteSaving||!user;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!user;$('note-retry').hidden=noteReady||noteSaving}
-function resetNotepad(){noteVersion++;noteReady=false;noteSaving=false;noteDirty=false;$('notepad').value='';noteStatus('');noteLock()}
-async function loadNotepad(){
- const owner=user?.id,version=++noteVersion;if(!owner)return;
- noteReady=false;noteLock();noteStatus('Carregando suas anotações…');
- try{const {data,error}=await api('/api/notepad');if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;$('notepad').value=data?.content||'';noteReady=true;noteDirty=false;foldNote(!!data?.content?.trim());noteStatus(data?'Anotações carregadas.':'Escreva o que precisar e clique em Salvar anotações.')}catch{if(version===noteVersion)noteStatus('Não foi possível carregar suas anotações. Tente novamente.',true)}finally{noteLock()}
+function noteLock(){$('notepad').disabled=!noteReady||noteSaving;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim();$('note-retry').hidden=noteReady||noteSaving;$('note-cancel').disabled=noteSaving}
+function clearDraft(){editingId=null;noteDirty=false;$('notepad').value='';$('note-label').textContent='Nova anotação';$('note-save').textContent='Salvar anotação';$('note-cancel').hidden=true;noteLock()}
+function renderNotes(){
+ $('note-count').textContent=`(${notes.length})`;$('note-history-list').replaceChildren();
+ if(!notes.length){const p=document.createElement('p');p.textContent='Suas anotações salvas aparecerão aqui.';p.style.fontSize='12px';$('note-history-list').append(p)}
+ for(const note of notes){
+  const detail=document.createElement('details'),summary=document.createElement('summary'),date=document.createElement('small'),text=document.createElement('div'),edit=document.createElement('button');
+  detail.style.cssText='border-top:1px solid #edf0eb;padding:12px 0';summary.style.cssText='cursor:pointer;font-size:13px;color:#607268;overflow-wrap:anywhere';summary.textContent=note.content.trim().replace(/\s+/g,' ').slice(0,85)+(note.content.length>85?'…':'');
+  date.textContent=new Date(note.created_at).toLocaleString('pt-BR');date.style.cssText='display:block;color:#98a39c;font-size:11px;margin-top:6px';summary.append(date);
+  text.textContent=note.content;text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:16px 0';edit.className='plain';edit.textContent='Editar';
+  edit.onclick=()=>{if(noteSaving)return;if(noteDirty&&!confirm('Substituir o rascunho atual por esta anotação?'))return;editingId=note.id;$('notepad').value=note.content;noteDirty=false;$('note-label').textContent='Editando anotação salva';$('note-save').textContent='Salvar alterações';$('note-cancel').hidden=false;noteStatus('Edite o texto e salve as alterações.');noteLock();$('notepad').focus();$('notepad').scrollIntoView({behavior:'smooth',block:'center'})};
+  detail.append(summary,text,edit);$('note-history-list').append(detail);
+ }
 }
-$('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};
-$('note-retry').onclick=loadNotepad;
+async function loadNotepad(){
+ noteReady=false;noteLock();noteStatus('Carregando histórico…');
+ try{const {data,error}=await api('/api/notes');if(error)throw error;notes=data;noteReady=true;renderNotes();noteStatus('Escreva e salve. Cada anotação ficará no histórico.')}catch{noteStatus('Não foi possível carregar o histórico. Tente novamente.',true)}finally{noteLock()}
+}
+$('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};$('note-retry').onclick=loadNotepad;
+$('note-cancel').onclick=()=>{if(noteDirty&&!confirm('Descartar as alterações não salvas?'))return;clearDraft();noteStatus('Pronto para uma nova anotação.')};
 $('note-save').onclick=async()=>{
- if(!user||!noteReady||noteSaving||!noteDirty)return;
- const owner=user.id,version=noteVersion,content=$('notepad').value;
- noteSaving=true;noteLock();noteStatus('Salvando anotações…');
- try{const {error}=await api('/api/notepad','PUT',{content});if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;noteDirty=false;noteStatus('Anotações salvas no banco de dados.');foldNote(true);$('note-toggle').focus()}catch{if(version===noteVersion)noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{if(version===noteVersion){noteSaving=false;noteLock()}}
+ if(!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim())return;
+ const id=editingId,content=$('notepad').value;noteSaving=true;noteLock();noteStatus('Salvando…');
+ try{const {data,error}=await api(id?'/api/notes/'+encodeURIComponent(id):'/api/notes',id?'PUT':'POST',{content});if(error)throw error;notes=id?notes.map(note=>note.id===id?data:note):[data,...notes];noteSaving=false;clearDraft();renderNotes();$('note-history').open=false;noteStatus(id?'Alterações salvas no histórico.':'Anotação salva no histórico. Pode escrever outra.');$('notepad').focus()}catch{noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{noteSaving=false;noteLock()}
 };
+
 window.addEventListener('beforeunload',event=>{if(noteDirty){event.preventDefault();event.returnValue=''}});
 render();lock();
 

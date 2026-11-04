@@ -9,6 +9,16 @@ export default {async fetch(request,env){
  if(method!=='GET'&&request.headers.get('Origin')!==url.origin)return json({message:'Origem inválida'},403);
  if(!env.DB)return json({message:'Banco indisponível'},503);
  try{
+  if(path==='/api/notes'&&method==='GET'){
+   await env.DB.prepare("insert or ignore into notes(id,content,created_at,updated_at) select 'original-notepad',content,?,? from notepad where id=1 and length(trim(content))>0").bind(new Date().toISOString(),new Date().toISOString()).run();
+   const {results}=await env.DB.prepare('select * from notes order by created_at desc, id').all();return json(results);
+  }
+  if((path==='/api/notes'&&method==='POST')||(path.startsWith('/api/notes/')&&method==='PUT')){
+   const body=await request.json();if(typeof body.content!=='string'||!body.content.trim()||body.content.length>100000)return json({message:'Escreva uma anotação válida'},400);
+   const now=new Date().toISOString();
+   if(method==='POST'){const row={id:crypto.randomUUID(),content:body.content,created_at:now,updated_at:now};await env.DB.prepare('insert into notes(id,content,created_at,updated_at) values (?,?,?,?)').bind(row.id,row.content,now,now).run();return json(row,201)}
+   const id=decodeURIComponent(path.slice('/api/notes/'.length));const result=await env.DB.prepare('update notes set content=?,updated_at=? where id=?').bind(body.content,now,id).run();if(!result.meta.changes)return json({message:'Anotação não encontrada'},404);return json(await env.DB.prepare('select * from notes where id=?').bind(id).first());
+  }
   if(path==='/api/tickets'&&method==='GET'){const from=Number(url.searchParams.get('from')||0);if(!Number.isSafeInteger(from)||from<0)return json({message:'Página inválida'},400);const {results}=await env.DB.prepare('select * from tickets order by closed_on desc, created_at desc, id limit 1000 offset ?').bind(from).all();return json(results)}
   if(path==='/api/tickets'&&method==='POST'){
    const body=await request.json(),number=typeof body.number==='string'?body.number.trim():'';const date=body.closed_on;

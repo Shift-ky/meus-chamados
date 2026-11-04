@@ -1,5 +1,6 @@
 import fs from 'node:fs';import {DatabaseSync} from 'node:sqlite';import assert from 'node:assert/strict';
 const sqlite=new DatabaseSync(':memory:');sqlite.exec(fs.readFileSync('drizzle/0000_personal_workspace.sql','utf8'));
+sqlite.exec(fs.readFileSync('drizzle/0001_note_history.sql','utf8'));
 const DB={prepare(sql){let args=[];return{bind(...values){args=values;return this},async all(){return {results:sqlite.prepare(sql).all(...args)}},async first(){return sqlite.prepare(sql).get(...args)},async run(){const result=sqlite.prepare(sql).run(...args);return {meta:{changes:Number(result.changes)}}}}}};
 const {default:worker}=await import('data:text/javascript;base64,'+Buffer.from(fs.readFileSync('dist/server/index.js')).toString('base64'));
 const req=(path,method='GET',body,origin='https://example.test')=>worker.fetch(new Request('https://example.test'+path,{method,headers:{Origin:origin,'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined}),{DB});
@@ -14,3 +15,11 @@ assert.equal((await req('/api/notepad','PUT',{content:'intruso'},'https://other.
 assert.equal((await req('/api/tickets/'+rows[0].id,'DELETE')).status,200);
 assert.equal((await (await req('/api/tickets')).json()).length,0);
 console.log('Passed: no login, persistence, duplicates, date validation, delete, cross-origin protection');
+let history=await (await req('/api/notes')).json();assert.equal(history.length,1);assert.equal(history[0].content,'Livre\nSegunda linha');
+assert.equal((await (await req('/api/notes')).json()).length,1);
+const first=await (await req('/api/notes','POST',{content:'Nova anotação'})).json();
+await req('/api/notes','POST',{content:'Outra anotação'});
+await req('/api/notes/'+first.id,'PUT',{content:'Texto editado'});
+history=await (await req('/api/notes')).json();assert.equal(history.length,3);assert.equal(history.find(n=>n.id===first.id).content,'Texto editado');assert(history.some(n=>n.id==='original-notepad'));
+assert.equal((await req('/api/notes','POST',{content:'  '})).status,400);
+console.log('Passed: legacy preservation, separate saved notes, history and editing');
