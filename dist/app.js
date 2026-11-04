@@ -27,11 +27,11 @@ async function load(){
  ready=false;lock();message('Carregando chamados…');
  try{let all=[];for(let from=0;;from+=1000){const {data,error}=await db.from('work_tickets').select('*').order('closed_on',{ascending:false}).order('created_at',{ascending:false}).order('id').range(from,from+999);if(error)throw error;all.push(...data);if(data.length<1000)break}if(version!==loadVersion||user?.id!==owner)return;entries=all;ready=true;render();message('Registros atualizados com o banco de dados.')}catch{if(version===loadVersion)message('Não foi possível carregar os chamados. Verifique sua conexão e clique em Atualizar.',true)}finally{lock()}
 }
-function sessionChanged(session){const previous=user?.id;user=session?.user||null;$('auth').hidden=!!user;$('workspace').hidden=!user;$('account').hidden=!user;$('email-label').textContent=user?.email||'';if(previous!==user?.id){loadVersion++;entries=[];ready=false;render();if(user)setTimeout(load,0)}lock()}
+function sessionChanged(session){const previous=user?.id;user=session?.user||null;$('auth').hidden=!!user;$('workspace').hidden=!user;$('account').hidden=!user;$('email-label').textContent=user?.email||'';if(previous!==user?.id){loadVersion++;entries=[];ready=false;resetNotepad();render();if(user)setTimeout(()=>{load();loadNotepad()},0)}lock()}
 $('date').value=$('filter').value=day();
 $('auth-form').onsubmit=async e=>{e.preventDefault();$('login').disabled=true;authMessage('Entrando…');try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('password').value='';sessionChanged(data.session);authMessage('')}catch{authMessage('Não foi possível entrar. Confira o e-mail, a senha e a confirmação do cadastro.',true)}finally{$('login').disabled=false}};
 $('signup').onclick=async()=>{if(!$('auth-form').reportValidity())return;$('signup').disabled=true;authMessage('Criando conta…');try{const {data,error}=await db.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)throw error;$('password').value='';if(data.session)sessionChanged(data.session);else authMessage('Confira seu e-mail para confirmar o cadastro. Depois, volte aqui e entre.')}catch{authMessage('Não foi possível criar a conta. Use uma senha de pelo menos 8 caracteres ou tente novamente mais tarde.',true)}finally{$('signup').disabled=false}};
-$('logout').onclick=async()=>{if(busy)return;const {error}=await db.auth.signOut();if(error){message('Não foi possível sair. Tente novamente.',true);return}sessionChanged(null)};
+$('logout').onclick=async()=>{if(busy||noteSaving)return;if(noteDirty&&!confirm('Você tem anotações não salvas. Sair mesmo assim?'))return;const {error}=await db.auth.signOut();if(error){message('Não foi possível sair. Tente novamente.',true);return}sessionChanged(null)};
 $('form').onsubmit=async e=>{
  e.preventDefault();if(busy||!ready||!user)return;
  const number=$('number').value.trim().replace(/^#+/,'').trim(),closed_on=$('date').value;
@@ -51,6 +51,24 @@ $('import-file').onchange=async()=>{
  await load();message(`${imported} chamado(s) importado(s). Duplicados foram ignorados.`);
  }catch(error){await load();message(error.message||'Não foi possível importar o arquivo.',true)}finally{busy=false;lock();$('import-file').value=''}
 };
+let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0;
+function noteStatus(text,error=false){$('note-status').textContent=text;$('note-status').classList.toggle('error',error)}
+function noteLock(){$('notepad').disabled=!noteReady||noteSaving||!user;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!user;$('note-retry').hidden=noteReady||noteSaving}
+function resetNotepad(){noteVersion++;noteReady=false;noteSaving=false;noteDirty=false;$('notepad').value='';noteStatus('');noteLock()}
+async function loadNotepad(){
+ const owner=user?.id,version=++noteVersion;if(!owner)return;
+ noteReady=false;noteLock();noteStatus('Carregando suas anotações…');
+ try{const {data,error}=await db.from('work_notepads').select('content').eq('user_id',owner).maybeSingle();if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;$('notepad').value=data?.content||'';noteReady=true;noteDirty=false;noteStatus(data?'Anotações carregadas.':'Escreva o que precisar e clique em Salvar anotações.')}catch{if(version===noteVersion)noteStatus('Não foi possível carregar suas anotações. Tente novamente.',true)}finally{noteLock()}
+}
+$('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};
+$('note-retry').onclick=loadNotepad;
+$('note-save').onclick=async()=>{
+ if(!user||!noteReady||noteSaving||!noteDirty)return;
+ const owner=user.id,version=noteVersion,content=$('notepad').value;
+ noteSaving=true;noteLock();noteStatus('Salvando anotações…');
+ try{const {error}=await db.from('work_notepads').upsert({user_id:owner,content},{onConflict:'user_id'});if(error)throw error;if(version!==noteVersion||user?.id!==owner)return;noteDirty=false;noteStatus('Anotações salvas na sua conta.')}catch{if(version===noteVersion)noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{if(version===noteVersion){noteSaving=false;noteLock()}}
+};
+window.addEventListener('beforeunload',event=>{if(noteDirty){event.preventDefault();event.returnValue=''}});
 db.auth.onAuthStateChange((_event,session)=>sessionChanged(session));
 db.auth.getSession().then(({data,error})=>{if(error)authMessage('Não foi possível recuperar a sessão.',true);else sessionChanged(data.session)});
 render();lock();

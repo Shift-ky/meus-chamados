@@ -29,3 +29,7 @@ Abra a versão anterior no mesmo navegador em que registrou os tickets, exporte 
 ## Hospedagem
 
 Publique a pasta `dist` em um serviço de hospedagem estática. O arquivo `.openai/hosting.json` pertence à hospedagem Sites. GitHub armazena o código; o banco de dados fica no Supabase.
+
+## Bloco de notas
+
+Anotações livres em um bloco pessoal, independente dos tickets. Clique em **Salvar anotações** para guardar o texto no banco. O aplicativo avisa antes de sair com alterações não salvas. Cada conta acessa apenas o próprio bloco.
