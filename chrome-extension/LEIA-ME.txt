@@ -1,41 +1,12 @@
-MY WORK — EXTENSÃO PARA CHROME
-Versão 1.0.0
+My Work no Chrome
 
-INSTALAR
-1. Extraia o arquivo My-Work-Chrome.zip em uma pasta permanente.
-2. No Chrome, digite chrome://extensions na barra de endereço.
-3. Ative "Modo do desenvolvedor", no canto superior direito.
-4. Clique em "Carregar sem compactação".
-5. Selecione a pasta my-work-extension (a que contém manifest.json).
-6. No menu de extensões (peça de quebra-cabeça), fixe o My Work.
+Atualizar para a versão 2.0.0
 
-USAR
-1. Clique no ícone My Work para abrir o painel lateral.
-2. Clique em "Entrar / abrir site" e faça login na sua conta, se solicitado.
-3. Se o site já estava aberto antes da instalação, recarregue essa aba.
-4. Volte ao painel e clique em "Conectar / atualizar".
-5. Mantenha a aba do site aberta; ela pode ficar em segundo plano.
+1. Extraia o ZIP em uma pasta permanente.
+2. Abra chrome://extensions e ative Modo do desenvolvedor.
+3. Desative a extensão antiga. Clique em Carregar sem compactação e selecione a pasta my-work-extension-v2 que contém o arquivo manifest.json.
+4. Fixe a nova extensão no menu de extensões e abra o painel pelo ícone.
 
-O painel permite registrar, listar, filtrar e excluir chamados; importar e
-exportar CSV; criar, editar e excluir anotações, com o modelo existente.
-Os dados são os mesmos do site e do PWA. Clique em Atualizar quando fizer
-alterações em outra janela. Salve as anotações antes de fechar o painel.
+Se o painel pedir login, clique em Entrar no My Work e entre com sua conta no mesmo perfil do Chrome. Depois, feche a aba e clique em Atualizar no painel. Se sua sessão expirar, repita o login.
 
-REQUISITOS E PRIVACIDADE
-Chrome 116 ou posterior, conexão à internet e acesso autorizado ao My Work.
-A extensão só acessa o endereço do seu My Work. Não lê suas outras páginas.
-O login é realizado no próprio site. Nenhuma senha ou chave está no pacote.
-A aba do site precisa estar no mesmo perfil do Chrome, fora do modo anônimo.
-O painel não funciona offline nem quando a aba do site está fechada.
-O site e o PWA continuam disponíveis. Não houve alteração no banco ou no site.
-
-SE NÃO CONECTAR
-Abra o site, conclua o login, recarregue a aba e clique em Conectar / atualizar.
-Se o Chrome suspender a aba por inatividade, abra-a novamente e recarregue.
-Se o acesso ao site também falhar, resolva o login/conexão primeiro.
-Após atualizar a extensão, recarregue tanto a extensão quanto a aba do site.
-
-INSTALAÇÃO LOCAL
-Este pacote é para instalação manual. Não foi publicado na Chrome Web Store.
-Para remover, abra chrome://extensions e clique em Remover no My Work.
-Remover a extensão não apaga os dados do site.
+O painel acessa os mesmos chamados e anotações do site e do PWA. Requer internet e Chrome 116 ou posterior.

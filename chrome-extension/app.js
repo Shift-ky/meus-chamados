@@ -87,5 +87,16 @@ render();lock();
 
 load();loadNotepad();
 
-document.getElementById('open-site').onclick=()=>chrome.runtime.sendMessage({type:'MY_WORK_OPEN'});
+document.getElementById('open-site').onclick=async()=>{
+ const status=document.getElementById('connection-status');
+ try{
+  const result=await chrome.runtime.sendMessage({type:'MY_WORK_OPEN'});
+  if(!result?.ok)throw Error();
+  status.textContent='Depois de entrar no My Work, feche a aba e clique em Atualizar.';
+  status.classList.remove('error');
+ }catch{
+  status.textContent='Não foi possível abrir o My Work.';
+  status.classList.add('error');
+ }
+};
 document.getElementById('reconnect').onclick=()=>{if(!busy&&!noteSaving){load();loadNotepad()}};

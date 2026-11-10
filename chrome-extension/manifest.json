@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "My Work — Chamados e anotações",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Seu My Work no painel lateral do Chrome, conectado ao site e aos mesmos dados.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -19,21 +19,11 @@
   "side_panel": {
     "default_path": "sidepanel.html"
   },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://meus-chamados-robson-041126.nosborx-costa.chatgpt.site/*"
-      ],
-      "js": [
-        "bridge.js"
-      ],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16": "icons/16.png",
     "32": "icons/32.png",
     "48": "icons/48.png",
     "128": "icons/128.png"
-  }
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvqDioIXhClGetQgk7aPZ65LsUUAN40Icjw8zgXfhHtYs69sOZF7gOO11jYTWMi7JIfHXdqk1vsv10e7Ext92pYMx4mgvUFIc1tnTFNjoaZ5RwvXV8uEu4n8zPmtVUQQQYYp1eqa4g0VLT97iznwsPfD+4rNg5MIZpxr/smD2klfveWqnV6Zs3772c7O3T7hSOUkCNokdvAnOajAXFU8/ZnHBGhWI0JjuUYYYZCM2JyTZfyu76jWB8/Jp2gaikFIntwaOREQMg7y51jbfdIjG7ZtY4syqhoRk256/E/N0oUAJ4R8W1Y0wECF0XOq3nl4DAd0xO9EWo59/tpUddgmQxQIDAQAB"
 }

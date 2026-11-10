@@ -31,3 +31,34 @@ await req('/api/notes/original-notepad','DELETE');
 assert(!(await (await req('/api/notes')).json()).some(n=>n.id==='original-notepad'));
 assert.equal((await req('/api/notes/'+first.id,'PUT',{content:'Deleted'})).status,404);
 console.log('Passed: history deletion, no legacy resurrection, deleted note cannot be edited');
+
+const extensionRequest = (path, method, body, extraHeaders = {}) => {
+  const headers = {
+    'Origin': 'chrome-extension://nfjkhehohhjpmalmkllgfjnfpelilpio',
+    'X-My-Work-Client': 'chrome-side-panel',
+    'oai-authenticated-user-id': 'test-owner',
+    'Content-Type': 'application/json',
+    ...extraHeaders,
+  };
+  for (const key of Object.keys(headers)) if (headers[key] === null) delete headers[key];
+  return worker.fetch(new Request('https://example.test/api/extension/' + path, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  }), {DB});
+};
+
+const extensionTicket = {number:'extension-123', closed_on:'2026-11-05'};
+assert.equal((await extensionRequest('tickets', 'GET', undefined, {'oai-authenticated-user-id':null})).status, 401);
+assert.equal((await extensionRequest('tickets', 'POST', extensionTicket, {Origin:'https://other.test'})).status, 403);
+assert.equal((await extensionRequest('tickets', 'POST', extensionTicket, {'X-My-Work-Client':null})).status, 403);
+assert.equal((await extensionRequest('notepad', 'GET')).status, 404);
+assert.equal((await extensionRequest('tickets', 'OPTIONS')).status, 405);
+assert.equal((await extensionRequest('tickets', 'POST', extensionTicket)).status, 201);
+assert.equal((await extensionRequest('tickets', 'POST', extensionTicket)).status, 409);
+assert((await (await req('/api/tickets')).json()).some(ticket => ticket.number === extensionTicket.number));
+assert((await (await extensionRequest('tickets?from=0','GET',undefined,{Origin:null})).json()).some(ticket => ticket.number === extensionTicket.number));
+const extensionNote = await (await extensionRequest('notes', 'POST', {content:'Pelo painel lateral'})).json();
+assert.equal((await extensionRequest('notes/' + extensionNote.id, 'PUT', {content:'Editado no painel'})).status, 200);
+assert((await (await req('/api/notes')).json()).some(note => note.id === extensionNote.id && note.content === 'Editado no painel'));
+console.log('Passed: extension session, origin, request header, route scope, shared tickets and notes');

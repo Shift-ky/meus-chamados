@@ -1,12 +1,30 @@
 // The Sites owner-only access gate protects the UI and these same-origin endpoints.
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 export default {async fetch(request,env){
- const url=new URL(request.url),path=url.pathname,method=request.method;
+ const url = new URL(request.url);
+ const method = request.method;
+ const origin = request.headers.get('Origin');
+ let path = url.pathname;
+ const fromExtension = path.startsWith('/api/extension/');
+ if (fromExtension) {
+  // Sites authenticates the browser session before the request reaches this worker.
+  if (!request.headers.get('oai-authenticated-user-id')) return json({message:'Entre no My Work para continuar'},401);
+  // Chrome may omit Origin on some privileged requests. A web page cannot
+  // send this custom header cross-origin because we do not authorize preflights.
+  if ((origin !== null && origin !== 'chrome-extension://nfjkhehohhjpmalmkllgfjnfpelilpio') ||
+      request.headers.get('X-My-Work-Client') !== 'chrome-side-panel') {
+   return json({message:'Origem da extensão inválida'},403);
+  }
+  path = '/api/' + path.slice('/api/extension/'.length);
+  if (!/^\/api\/(?:tickets|notes)(?:\/[a-zA-Z0-9-]+)?$/.test(path)) {
+   return json({message:'Não encontrado'},404);
+  }
+ }
  if(path==='/')return new Response(HTML,{headers:{'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store'}});
  if(path==='/app.js')return new Response(JS,{headers:{'Content-Type':'text/javascript;charset=utf-8','Cache-Control':'no-store'}});
  if(!path.startsWith('/api/'))return new Response('Not found',{status:404});
  if(!['GET','POST','PUT','DELETE'].includes(method))return json({message:'Método inválido'},405);
- if(method!=='GET'&&request.headers.get('Origin')!==url.origin)return json({message:'Origem inválida'},403);
+ if(!fromExtension&&method!=='GET'&&origin!==url.origin)return json({message:'Origem inválida'},403);
  if(!env.DB)return json({message:'Banco indisponível'},503);
  try{
   if(path==='/api/notes'&&method==='GET'){
