@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "My Work — Chamados e anotações",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Seu My Work no painel lateral do Chrome, conectado ao site e aos mesmos dados.",
   "minimum_chrome_version": "116",
   "permissions": [

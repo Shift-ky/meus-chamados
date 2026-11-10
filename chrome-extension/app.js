@@ -1,11 +1,21 @@
-async function api(path,method='GET',body){
- try{const result=await chrome.runtime.sendMessage({type:'MY_WORK_API',path,method,body});
- if(!result)throw Error();
- const status=document.getElementById('connection-status');
- status.textContent=result.error?.connection?result.error.message:result.error?'Conectado ao My Work. A operação não foi concluída.':'Conectado ao My Work • mesmos dados do site';
- status.classList.toggle('error',!!result.error);
- return result;
- }catch{return {data:null,error:{message:'Falha ao conectar. Reabra o painel lateral.'}}}
+function showConnectionError(text) {
+ const status = document.getElementById('connection-status');
+ status.textContent = text;
+ status.classList.toggle('error', Boolean(text));
+ document.getElementById('open-site').hidden = !text;
+}
+
+async function api(path, method = 'GET', body) {
+ try {
+  const result = await chrome.runtime.sendMessage({type:'MY_WORK_API', path, method, body});
+  if (!result) throw Error();
+  showConnectionError(result.error?.connection ? result.error.message : '');
+  return result;
+ } catch {
+  const message = 'Falha ao conectar. Reabra o painel lateral.';
+  showConnectionError(message);
+  return {data:null, error:{message, connection:true}};
+ }
 }
 const $ = id => document.getElementById(id);
 const day = () => {const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
@@ -30,7 +40,7 @@ function render(){
 async function load(){
  const version=++loadVersion,owner=user?.id;if(!owner)return;
  ready=false;lock();message('Carregando chamados…');
- try{let all=[];for(let from=0;;from+=1000){const {data,error}=await api('/api/tickets?from='+from);if(error)throw error;all.push(...data);if(data.length<1000)break}if(version!==loadVersion||user?.id!==owner)return;entries=all;ready=true;render();message('Registros atualizados com o banco de dados.')}catch{if(version===loadVersion)message('Não foi possível carregar os chamados. Verifique sua conexão e clique em Atualizar.',true)}finally{lock()}
+ try{let all=[];for(let from=0;;from+=1000){const {data,error}=await api('/api/tickets?from='+from);if(error)throw error;all.push(...data);if(data.length<1000)break}if(version!==loadVersion||user?.id!==owner)return;entries=all;ready=true;render();message('')}catch{if(version===loadVersion)message('Não foi possível carregar os chamados. Verifique sua conexão e clique em Atualizar.',true)}finally{lock()}
 }
 $('date').value=$('filter').value=day();
 $('form').onsubmit=async e=>{
@@ -71,7 +81,7 @@ function renderNotes(){
 }
 async function loadNotepad(){
  noteReady=false;noteLock();noteStatus('Carregando histórico…');
- try{const {data,error}=await api('/api/notes');if(error)throw error;notes=data;noteReady=true;renderNotes();noteStatus('Escreva e salve. Cada anotação ficará no histórico.')}catch{noteStatus('Não foi possível carregar o histórico. Tente novamente.',true)}finally{noteLock()}
+ try{const {data,error}=await api('/api/notes');if(error)throw error;notes=data;noteReady=true;renderNotes();noteStatus('')}catch{noteStatus('Não foi possível carregar o histórico. Tente novamente.',true)}finally{noteLock()}
 }
 $('notepad').oninput=()=>{noteDirty=true;noteStatus('Alterações não salvas.');noteLock()};$('note-retry').onclick=loadNotepad;
 $('note-template').onclick=()=>{if(!noteReady||noteSaving)return;const field=$('notepad'),template='CLIENTE: \nSOLICITANTE: \nTELEFONE: \nPROBLEMA: ';if(field.value.length+(field.value?'\n\n':'').length+template.length>field.maxLength){noteStatus('Não há espaço para inserir o modelo.',true);return}field.value+=(field.value?'\n\n':'')+template;noteDirty=true;noteStatus('Modelo inserido. Preencha os campos e salve.');noteLock();field.focus()};
