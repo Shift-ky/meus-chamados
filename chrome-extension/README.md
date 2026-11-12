@@ -1,12 +1,12 @@
 # My Work no Chrome
 
-## Atualizar para a versão 2.1.0
+## Atualizar para a versão 2.2.0
 
 1. Extraia o ZIP em uma pasta permanente.
 2. Abra `chrome://extensions` e ative **Modo do desenvolvedor**.
-3. Se já usa a versão 2.0, extraia os arquivos sobre a pasta dela e clique em Recarregar no cartão da extensão. Para uma instalação nova, clique em **Carregar sem compactação** e selecione a pasta `my-work-extension-v2.1` que contém o arquivo `manifest.json`.
-4. Fixe a nova extensão no menu de extensões e abra o painel pelo ícone.
+3. Se já usa a uma versão anterior, extraia os arquivos sobre a pasta dela e clique em Recarregar no cartão da extensão. Para uma instalação nova, clique em **Carregar sem compactação** e selecione a pasta `my-work-extension-v2.2` que contém o arquivo `manifest.json`.
+4. Fixe a nova extensão no menu de extensões e abra o pop-up pelo ícone.
 
-Se o painel pedir login, clique em **Entrar no My Work** e entre com sua conta no mesmo perfil do Chrome. Depois, feche a aba e clique em **Atualizar** no painel. Se sua sessão expirar, repita o login.
+Se o pop-up pedir login, clique em **Entrar no My Work** e entre com sua conta no mesmo perfil do Chrome. Depois, feche a aba e clique em **Atualizar** no pop-up. Se sua sessão expirar, repita o login.
 
-O painel acessa os mesmos chamados e anotações do site e do PWA. Requer internet e Chrome 116 ou posterior.
+O pop-up acessa os mesmos chamados e anotações do site e do PWA. Requer internet e Chrome 116 ou posterior.

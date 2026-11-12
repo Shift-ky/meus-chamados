@@ -1,7 +1,5 @@
 const SITE = "https://meus-chamados-robson-041126.nosborx-costa.chatgpt.site";
-const LOGIN_REQUIRED = 'Clique em Entrar no My Work, faça login e volte ao painel.';
-
-chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
+const LOGIN_REQUIRED = 'Clique em Entrar no My Work, faça login e abra o My Work novamente.';
 
 function failure(message, connection = false) {
   return { data: null, error: { message, connection } };
