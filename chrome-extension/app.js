@@ -73,12 +73,26 @@ let noteReady=false,noteSaving=false,noteDirty=false,noteVersion=0,notes=[],edit
 function noteStatus(text,error=false){$('note-status').textContent=text;$('note-status').classList.toggle('error',error)}
 function noteLock(){$('notepad').disabled=!noteReady||noteSaving;$('note-save').disabled=!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim();$('note-retry').hidden=noteReady||noteSaving;$('note-cancel').disabled=noteSaving;$('note-template').disabled=!noteReady||noteSaving}
 function clearDraft(){editingId=null;noteDirty=false;$('notepad').value='';$('note-label').textContent='Nova anotação';$('note-save').textContent='Salvar anotação';$('note-cancel').hidden=true;noteLock()}
+function noteField(content, label) {
+ const pattern = new RegExp(String.raw`^[^\S\r\n]*${label}[^\S\r\n]*:[^\S\r\n]*([^\r\n]*)`, 'im');
+ return pattern.exec(content)?.[1].trim() ?? '';
+}
+
+function normalizeName(name) {
+ return name.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().trim().replace(/\s+/g, ' ');
+}
+
+$('note-search').addEventListener('input', renderNotes);
+
 function renderNotes(){
- $('note-count').textContent=`(${notes.length})`;$('note-history-list').replaceChildren();
- if(!notes.length){const p=document.createElement('p');p.textContent='Suas anotações salvas aparecerão aqui.';p.style.fontSize='12px';$('note-history-list').append(p)}
- for(const note of notes){
+ const query = normalizeName($('note-search').value);
+ const matches = notes.map(note => ({ note, name: noteField(note.content, 'SOLICITANTE') }))
+  .filter(({ name }) => !query || normalizeName(name).includes(query));
+ $('note-count').textContent=`(${query ? matches.length + ' de ' : ''}${notes.length})`;$('note-history-list').replaceChildren();
+ if(!matches.length){const p=document.createElement('p');p.textContent=query?'Nenhuma anotação encontrada para esse solicitante.':'Suas anotações salvas aparecerão aqui.';p.style.fontSize='12px';$('note-history-list').append(p)}
+ for(const { note, name } of matches){
   const detail=document.createElement('details'),summary=document.createElement('summary'),date=document.createElement('small'),text=document.createElement('div'),edit=document.createElement('button');
-  detail.style.cssText='border-top:1px solid #edf0eb;padding:12px 0';summary.style.cssText='cursor:pointer;font-size:13px;color:#607268;overflow-wrap:anywhere';summary.textContent=note.content.trim().replace(/\s+/g,' ').slice(0,85)+(note.content.length>85?'…':'');
+  detail.style.cssText='border-top:1px solid #edf0eb;padding:12px 0';summary.style.cssText='cursor:pointer;font-size:13px;color:#607268;overflow-wrap:anywhere';const title = [name, noteField(note.content, 'CLIENTE')].filter(Boolean).join(' · ');summary.textContent=title || note.content.trim().replace(/\s+/g,' ').slice(0,85)+(note.content.length>85?'…':'');
   date.textContent=new Date(note.created_at).toLocaleString('pt-BR');date.style.cssText='display:block;color:#98a39c;font-size:11px;margin-top:6px';summary.append(date);
   text.textContent=note.content;text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:16px 0';edit.className='plain';edit.textContent='Editar';
   edit.onclick=()=>{if(noteSaving)return;if(noteDirty&&!confirm('Substituir o rascunho atual por esta anotação?'))return;editingId=note.id;$('notepad').value=note.content;noteDirty=false;$('note-label').textContent='Editando anotação salva';$('note-save').textContent='Salvar alterações';$('note-cancel').hidden=false;noteStatus('Edite o texto e salve as alterações.');noteLock();$('notepad').focus();$('notepad').scrollIntoView({behavior:'smooth',block:'center'})};
@@ -96,7 +110,7 @@ $('note-cancel').onclick=()=>{if(noteDirty&&!confirm('Descartar as alterações 
 $('note-save').onclick=async()=>{
  if(!noteReady||noteSaving||!noteDirty||!$('notepad').value.trim())return;
  const id=editingId,content=$('notepad').value;noteSaving=true;noteLock();noteStatus('Salvando…');
- try{const {data,error}=await api(id?'/api/notes/'+encodeURIComponent(id):'/api/notes',id?'PUT':'POST',{content});if(error)throw error;notes=id?notes.map(note=>note.id===id?data:note):[data,...notes];noteSaving=false;clearDraft();renderNotes();$('note-history').open=false;noteStatus(id?'Alterações salvas no histórico.':'Anotação salva no histórico. Pode escrever outra.');$('notepad').focus()}catch{noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{noteSaving=false;noteLock()}
+ try{const {data,error}=await api(id?'/api/notes/'+encodeURIComponent(id):'/api/notes',id?'PUT':'POST',{content});if(error)throw error;notes=id?notes.map(note=>note.id===id?data:note):[data,...notes];noteSaving=false;clearDraft();renderNotes();$('note-history').open=Boolean(id);noteStatus(id?'Alterações salvas no histórico.':'Anotação salva no histórico. Pode escrever outra.');$('notepad').focus()}catch{noteStatus('Não foi possível salvar. Seu texto continua aqui; tente novamente.',true)}finally{noteSaving=false;noteLock()}
 };
 
 window.addEventListener('beforeunload',event=>{if(noteDirty){event.preventDefault();event.returnValue=''}});
