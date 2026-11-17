@@ -12,8 +12,8 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; width: 420px; max-height: 560px; overflow-y: auto; }
-main { max-width: 500px; margin: auto; padding: 16px 14px 24px; }
+body { margin: 0; width: 480px; }
+main { max-width: 480px; margin: auto; padding: 16px 14px 24px; }
 header, .brand, .connection-actions, .count, .foot {
   display: flex;
   align-items: center;
@@ -91,6 +91,9 @@ button:disabled { opacity: .55; cursor: default; }
 #note-history { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 9px; }
 #note-history summary { color: var(--muted); font-size: 12px; cursor: pointer; }
 #note-history-list { margin-top: 8px; }
+#active-ticket-list { list-style:none; padding:0; margin:0; }
+#active-ticket-list li { display:flex; align-items:center; gap:8px; margin-top:8px; }
+#active-ticket-list li span { flex:1; overflow-wrap:anywhere; }
 </style></head><body>
 <main>
   <header>
@@ -101,4 +104,4 @@ button:disabled { opacity: .55; cursor: default; }
   <div id="workspace">
     <div class="counts"><div class="count"><b id="todayCount">–</b><span>fechados hoje</span></div><div class="count"><b id="monthCount">–</b><span>fechados no mês</span></div><button id="closed-toggle" class="plain" type="button" aria-expanded="false" aria-controls="closed-tickets">Ver fechados</button></div>
     <section id="closed-tickets" class="card" aria-labelledby="closed-heading" hidden><h2 id="closed-heading">Chamados fechados</h2><p id="closed-status" class="message" role="status" hidden></p><ul id="closed-list" class="closed-ticket-list"></ul></section>
-    <section class="card"><h2>Registrar chamado</h2><form id="form"><div><label for="number">Número do ticket</label><input id="number" placeholder="Ex.: 123456" maxlength="100" required autocomplete="off"></div><div><label for="date">Data de fechamento</label><input type="date" id="date" required></div><button type="submit">Registrar</button></form><div id="message" class="message" role="status" aria-live="polite"></div></section><section class="card" aria-labelledby="notes-heading"><h2 id="notes-heading">Bloco de notas</h2><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px"><label id="note-label" for="notepad" style="margin:0">Nova anotação</label><button type="button" id="note-template" class="plain" disabled>＋ Inserir modelo</button></div><textarea id="notepad" rows="3" maxlength="100000" placeholder="Escreva uma nova anotação…" disabled></textarea><div class="foot"><span id="note-status" role="status" aria-live="polite"></span><div><button id="note-retry" class="plain" type="button">Tentar novamente</button> <button id="note-cancel" class="plain" type="button" hidden>Cancelar edição</button> <button id="note-save" type="button" disabled>Salvar anotação</button></div></div><details id="note-history"><summary>Histórico <span id="note-count">(0)</span></summary><div style="margin:12px 0"><label for="note-search">Buscar por solicitante</label><input type="search" id="note-search" placeholder="Digite o nome" autocomplete="off" style="width:100%"></div><div id="note-history-list"></div></details></section></div></main><script type="module" src="./app.js"></script></body></html>
+    <section class="card"><h2>Ticket em andamento</h2><form id="active-ticket-form"><div><label for="active-ticket-number">Número do ticket</label><input id="active-ticket-number" placeholder="Ex.: 123456" maxlength="100" required autocomplete="off"></div><button id="start-ticket" type="submit">Iniciar</button></form><ul id="active-ticket-list"></ul><div id="message" class="message" role="status"></div><div id="active-ticket-status" class="message" role="status"></div></section><section class="card" aria-labelledby="notes-heading"><h2 id="notes-heading">Bloco de notas</h2><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px"><label id="note-label" for="notepad" style="margin:0">Nova anotação</label><button type="button" id="note-template" class="plain" disabled>＋ Inserir modelo</button></div><textarea id="notepad" rows="3" maxlength="100000" placeholder="Escreva uma nova anotação…" disabled></textarea><div class="foot"><span id="note-status" role="status" aria-live="polite"></span><div><button id="note-retry" class="plain" type="button">Tentar novamente</button> <button id="note-cancel" class="plain" type="button" hidden>Cancelar edição</button> <button id="note-save" type="button" disabled>Salvar anotação</button></div></div><details id="note-history"><summary>Histórico <span id="note-count">(0)</span></summary><div style="margin:12px 0"><label for="note-search">Buscar por solicitante</label><input type="search" id="note-search" placeholder="Digite o nome" autocomplete="off" style="width:100%"></div><div id="note-history-list"></div></details></section></div></main><script type="module" src="./app.js"></script></body></html>

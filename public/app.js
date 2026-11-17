@@ -72,7 +72,14 @@ function renderNotes(){
   text.textContent=note.content;text.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:16px 0';edit.className='plain';edit.textContent='Editar';
   edit.onclick=()=>{if(noteSaving)return;if(noteDirty&&!confirm('Substituir o rascunho atual por esta anotação?'))return;editingId=note.id;$('notepad').value=note.content;noteDirty=false;$('note-label').textContent='Editando anotação salva';$('note-save').textContent='Salvar alterações';$('note-cancel').hidden=false;noteStatus('Edite o texto e salve as alterações.');noteLock();$('notepad').focus();$('notepad').scrollIntoView({behavior:'smooth',block:'center'})};
   const remove=document.createElement('button');remove.className='plain';remove.textContent='Excluir';remove.style.cssText='margin-left:8px;color:#96766e';remove.onclick=async()=>{if(noteSaving||!confirm('Excluir esta anotação do histórico?'))return;noteSaving=true;noteLock();try{const {error}=await api('/api/notes/'+encodeURIComponent(note.id),'DELETE');if(error)throw error;notes=notes.filter(n=>n.id!==note.id);noteSaving=false;if(editingId===note.id)clearDraft();renderNotes();noteStatus('Anotação excluída do histórico.')}catch{noteStatus('Não foi possível excluir. Tente novamente.',true)}finally{noteSaving=false;noteLock()}};
-  detail.append(summary,text,edit,remove);$('note-history-list').append(detail);
+  const row = document.createElement('div');
+  row.style.cssText = 'position:relative';
+  detail.style.paddingRight = '72px';
+  edit.type = 'button';
+  edit.style.cssText = 'position:absolute;right:0;top:6px';
+  detail.append(summary,text,remove);
+  row.append(detail,edit);
+  $('note-history-list').append(row);
  }
 }
 async function loadNotepad(){
