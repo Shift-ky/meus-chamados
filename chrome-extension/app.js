@@ -22,10 +22,40 @@ const day = () => {const d=new Date(); return `${d.getFullYear()}-${String(d.get
 let entries=[], user={id:"personal"}, busy=false, ready=false, loadVersion=0;
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
 function lock(){lockActiveTicket()}
+function renderGoals() {
+ const today = day();
+ const start = new Date(today + 'T12:00:00');
+ start.setDate(start.getDate() - 28);
+ const dateKey = date => date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
+ const historyStart = dateKey(start);
+ const historyCount = entries.filter(entry => entry.closed_on >= historyStart && entry.closed_on < today).length;
+ const monday = new Date(today + 'T12:00:00');
+ monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+ const weekStart = dateKey(monday);
+ for (const period of ['daily','weekly']) {
+  const count = entries.filter(entry => period === 'daily'
+   ? entry.closed_on === today
+   : entry.closed_on >= weekStart && entry.closed_on <= today).length;
+  const average = Math.max(1, Math.ceil(historyCount / (period === 'daily' ? 28 : 4)));
+  const target = period === 'daily' ? Math.min(14, Math.max(7, average)) : Math.max(7, average);
+  const progress = $(period + '-progress');
+  progress.max = target;
+  progress.value = ready ? Math.min(count, target) : 0;
+  const status = $(period + '-goal-status');
+  status.textContent = ready ? count + ' / ' + target : 'Aguardando atualização';
+  status.parentElement.classList.toggle('goal-reached', ready && count >= target);
+ }
+}
+setInterval(render, 60000);
+
 function render(){
- const today=day(), month=today.slice(0,7);
+ const today=day();
+ const monday = new Date(today + 'T12:00:00');
+ monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
+ const weekStart = monday.getFullYear() + '-' + String(monday.getMonth()+1).padStart(2,'0') + '-' + String(monday.getDate()).padStart(2,'0');
  $('todayCount').textContent=entries.filter(e=>e.closed_on===today).length;
- $('monthCount').textContent=entries.filter(e=>e.closed_on.slice(0,7)===month).length;
+ $('weekCount').textContent=entries.filter(e=>e.closed_on>=weekStart && e.closed_on<=today).length;
+ renderGoals();
  renderClosedTickets();
 }
 const closedPanel = $('closed-tickets');
