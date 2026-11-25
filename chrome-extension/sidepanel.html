@@ -172,6 +172,35 @@ input:focus, textarea:focus { border-color:#598065; }
 #note-history-list details { border-top:0 !important; }
 #note-history-list summary { color:#304b38 !important; }
 #note-search { min-height:30px; font-size:12px; padding:5px 8px; }
+.goals { grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px 10px; }
+.goals > div + div { padding-left:0; border-left:0; }
+.goals .goal-settings { grid-column:1 / -1; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.goal-settings label { margin:0; }
+.goal-settings select { font:inherit; font-size:12px; padding:4px 7px; border:1px solid var(--line); border-radius:6px; background:white; color:inherit; }
+#fixed-goal-field { display:flex; align-items:center; gap:6px; }
+#fixed-goal { width:70px; min-height:28px; padding:3px 6px; }
+.goals strong { font-size:17px; }
+.goal-settings-panel { grid-column:1 / -1; }
+.goal-settings-panel > summary { cursor:pointer; color:var(--muted); font-size:11px; }
+.goal-settings-panel .goal-settings { margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+
+main { padding-top:10px; }
+header { margin-bottom:6px; gap:6px; }
+.brand { gap:7px; }
+.brand h1 { font-size:15px; letter-spacing:-.3px; }
+.logo { width:24px; height:24px; border-radius:7px; font-size:15px; }
+#reconnect { min-height:26px; padding:3px 9px; font-size:11px; }
+[aria-labelledby="notes-heading"] h2 { margin-bottom:2px; }
+
+.view-switch { display:flex; gap:4px; padding:3px; margin:10px 0; background:var(--soft); border-radius:8px; }
+.view-switch button { flex:1; background:transparent; color:var(--green); }
+.view-switch button[aria-pressed="true"] { background:var(--green); color:white; }
+body[data-view="counters"] .registration-content,
+body[data-view="counters"] #closed-toggle,
+body[data-view="counters"] #closed-tickets { display:none; }
+body[data-view="counters"] .counts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+body[data-view="counters"] .count { width:100%; flex-direction:column; text-align:center; padding:16px 8px; gap:5px; }
+body[data-view="counters"] .count b { font-size:28px; }
 </style></head><body>
 <main>
   <header>
@@ -179,11 +208,13 @@ input:focus, textarea:focus { border-color:#598065; }
     <div class="connection-actions"><button id="open-site" type="button" hidden>Entrar</button><button id="reconnect" class="plain" type="button">Atualizar</button></div>
   </header>
   <p id="connection-status" class="connection-status" role="status" aria-live="polite">Conectando…</p>
+  <nav class="view-switch" aria-label="Visualização da extensão"><button id="view-registration" type="button" aria-pressed="true">Registro</button><button id="view-counters" type="button" aria-pressed="false">Contadores</button></nav>
   <div id="workspace">
-    <div class="counts"><div class="count"><b id="todayCount">–</b><span>fechados hoje</span></div><div class="count"><b id="weekCount">–</b><span>fechados na semana</span></div><button id="closed-toggle" class="plain" type="button" aria-expanded="false" aria-controls="closed-tickets">Ver fechados</button></div>
-    <section class="card goals" aria-label="Metas de chamados fechados">
+    <div class="counts"><div class="count"><b id="todayCount">–</b><span>fechados hoje</span></div><div class="count"><b id="weekCount">–</b><span>fechados na semana</span></div><div class="count"><b id="monthCount">–</b><span>fechados no mês</span></div><button id="closed-toggle" class="plain" type="button" aria-expanded="false" aria-controls="closed-tickets">Ver fechados</button></div>
+    <section class="card goals registration-content" aria-label="Metas de chamados fechados">
+ <details class="goal-settings-panel"><summary>Configurar metas</summary><div class="goal-settings"><label for="goal-mode">Meta</label><select id="goal-mode"><option value="variable">Variável</option><option value="fixed">Fixa</option></select><label id="fixed-goal-field" hidden>Tickets por dia <input id="fixed-goal" type="number" min="1" max="100000" step="1" required></label></div></details>
  <div><span>Meta diária</span><strong id="daily-goal-status" aria-live="polite"></strong><progress id="daily-progress" aria-label="Progresso da meta diária"></progress></div>
  <div><span title="Segunda a domingo">Meta semanal</span><strong id="weekly-goal-status" aria-live="polite"></strong><progress id="weekly-progress" aria-label="Progresso da meta semanal"></progress></div>
- <small style="grid-column:1 / -1" title="Metas pela média dos últimos 28 dias completos, com mínimo de 7 tickets. A meta diária tem limite de 14.">Média de 28 dias · Diária de 7 a 14 · Semana de segunda a domingo</small></section>
+ <div><span>Meta mensal</span><strong id="monthly-goal-status" aria-live="polite"></strong><progress id="monthly-progress" aria-label="Progresso da meta mensal"></progress></div><small id="goal-description" style="grid-column:1 / -1"></small></section>
     <section id="closed-tickets" class="card" aria-labelledby="closed-heading" hidden><h2 id="closed-heading">Chamados fechados</h2><p id="closed-status" class="message" role="status" hidden></p><ul id="closed-list" class="closed-ticket-list"></ul></section>
-    <section class="card active-ticket-card"><h2>Tickets em atendimento</h2><form id="active-ticket-form"><div><label for="active-ticket-number">Número do ticket</label><input id="active-ticket-number" placeholder="Ex.: 123456" maxlength="100" required autocomplete="off"></div><button id="start-ticket" type="submit">Iniciar</button></form><ul id="active-ticket-list"></ul><div id="message" class="message" role="status"></div><div id="active-ticket-status" class="message" role="status"></div></section><section class="card" aria-labelledby="notes-heading"><h2 id="notes-heading">Bloco de notas</h2><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px"><label id="note-label" for="notepad" style="margin:0">Nova anotação</label><button type="button" id="note-template" class="plain" disabled>＋ Inserir modelo</button></div><textarea id="notepad" rows="3" maxlength="100000" placeholder="Escreva uma nova anotação…" disabled></textarea><div class="foot"><span id="note-status" role="status" aria-live="polite"></span><div><button id="note-retry" class="plain" type="button">Tentar novamente</button> <button id="note-cancel" class="plain" type="button" hidden>Cancelar edição</button> <button id="note-save" type="button" disabled>Salvar anotação</button></div></div><details id="note-history"><summary>Histórico <span id="note-count">(0)</span></summary><div style="margin:12px 0"><label for="note-search">Buscar por solicitante</label><input type="search" id="note-search" placeholder="Digite o nome" autocomplete="off" style="width:100%"></div><div id="note-history-list"></div></details></section></div></main><script type="module" src="./app.js"></script></body></html>
+    <section class="card active-ticket-card registration-content"><h2>Tickets em atendimento</h2><form id="active-ticket-form"><div><label for="active-ticket-number">Número do ticket</label><input id="active-ticket-number" placeholder="Ex.: 123456" maxlength="100" required autocomplete="off"></div><button id="start-ticket" type="submit">Iniciar</button></form><ul id="active-ticket-list"></ul><div id="message" class="message" role="status"></div><div id="active-ticket-status" class="message" role="status"></div></section><section class="card registration-content" aria-labelledby="notes-heading"><h2 id="notes-heading">Bloco de notas</h2><div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px"><label id="note-label" for="notepad" style="margin:0">Nova anotação</label><button type="button" id="note-template" class="plain" disabled>＋ Inserir modelo</button></div><textarea id="notepad" rows="3" maxlength="100000" placeholder="Escreva uma nova anotação…" disabled></textarea><div class="foot"><span id="note-status" role="status" aria-live="polite"></span><div><button id="note-retry" class="plain" type="button">Tentar novamente</button> <button id="note-cancel" class="plain" type="button" hidden>Cancelar edição</button> <button id="note-save" type="button" disabled>Salvar anotação</button></div></div><details id="note-history"><summary>Histórico <span id="note-count">(0)</span></summary><div style="margin:12px 0"><label for="note-search">Buscar por solicitante</label><input type="search" id="note-search" placeholder="Digite o nome" autocomplete="off" style="width:100%"></div><div id="note-history-list"></div></details></section></div></main><script type="module" src="./app.js"></script></body></html>

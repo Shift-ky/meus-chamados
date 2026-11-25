@@ -18,33 +18,90 @@ async function api(path, method = 'GET', body) {
  }
 }
 const $ = id => document.getElementById(id);
+const registrationView = $('view-registration');
+const countersView = $('view-counters');
+function selectView(view) {
+ document.body.dataset.view = view;
+ registrationView.setAttribute('aria-pressed', String(view === 'registration'));
+ countersView.setAttribute('aria-pressed', String(view === 'counters'));
+ localStorage.setItem('my-work-view', view);
+}
+registrationView.onclick = () => selectView('registration');
+countersView.onclick = () => selectView('counters');
+selectView(localStorage.getItem('my-work-view') === 'counters' ? 'counters' : 'registration');
 const day = () => {const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 let entries=[], user={id:"personal"}, busy=false, ready=false, loadVersion=0;
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
 function lock(){lockActiveTicket()}
+const goalMode = $('goal-mode');
+const fixedGoal = $('fixed-goal');
+goalMode.value = localStorage.getItem('my-work-goal-mode') === 'fixed' ? 'fixed' : 'variable';
+fixedGoal.value = localStorage.getItem('my-work-fixed-goal') ?? '7';
+let variableGoal = JSON.parse(localStorage.getItem('my-work-variable-goal') ?? 'null');
+
+function calculateVariableGoal(month) {
+ const date = new Date(month + '-01T12:00:00');
+ date.setMonth(date.getMonth() - 1);
+ const previousMonth = date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0');
+ const history = entries.filter(entry => entry.closed_on.slice(0,7) === previousMonth);
+ const workedDays = new Set(history.map(entry => entry.closed_on)).size;
+ const daily = Math.min(14, Math.max(7, Math.ceil(workedDays ? history.length / workedDays : 7)));
+ variableGoal = { month, daily, previousMonth, tickets: history.length, workedDays };
+ localStorage.setItem('my-work-variable-goal', JSON.stringify(variableGoal));
+}
+
+goalMode.addEventListener('change', () => {
+ localStorage.setItem('my-work-goal-mode', goalMode.value);
+ if (goalMode.value === 'variable') {
+  variableGoal = null;
+  localStorage.removeItem('my-work-variable-goal');
+ }
+ renderGoals();
+});
+fixedGoal.addEventListener('input', () => {
+ if (fixedGoal.value && fixedGoal.validity.valid) {
+  localStorage.setItem('my-work-fixed-goal', fixedGoal.value);
+  renderGoals();
+ }
+});
+
 function renderGoals() {
  const today = day();
- const start = new Date(today + 'T12:00:00');
- start.setDate(start.getDate() - 28);
- const dateKey = date => date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0') + '-' + String(date.getDate()).padStart(2,'0');
- const historyStart = dateKey(start);
- const historyCount = entries.filter(entry => entry.closed_on >= historyStart && entry.closed_on < today).length;
+ const month = today.slice(0,7);
+ const fixed = goalMode.value === 'fixed';
+ $('fixed-goal-field').hidden = !fixed;
+ if (!fixed && ready && variableGoal?.month !== month) calculateVariableGoal(month);
+ const dailyTarget = fixed ? Number(localStorage.getItem('my-work-fixed-goal') ?? 7) : variableGoal?.daily;
  const monday = new Date(today + 'T12:00:00');
- monday.setDate(monday.getDate() - (monday.getDay() + 6) % 7);
- const weekStart = dateKey(monday);
- for (const period of ['daily','weekly']) {
-  const count = entries.filter(entry => period === 'daily'
-   ? entry.closed_on === today
-   : entry.closed_on >= weekStart && entry.closed_on <= today).length;
-  const average = Math.max(1, Math.ceil(historyCount / (period === 'daily' ? 28 : 4)));
-  const target = period === 'daily' ? Math.min(14, Math.max(7, average)) : Math.max(7, average);
-  const progress = $(period + '-progress');
-  progress.max = target;
-  progress.value = ready ? Math.min(count, target) : 0;
-  const status = $(period + '-goal-status');
-  status.textContent = ready ? count + ' / ' + target : 'Aguardando atualização';
-  status.parentElement.classList.toggle('goal-reached', ready && count >= target);
+ monday.setDate(monday.getDate() - (monday.getDay()+6)%7);
+ const weekStart = monday.getFullYear() + '-' + String(monday.getMonth()+1).padStart(2,'0') + '-' + String(monday.getDate()).padStart(2,'0');
+ let businessDays = 0;
+ const calendar = new Date(month + '-01T12:00:00');
+ while (calendar.getMonth() === Number(month.slice(5))-1) {
+  if (calendar.getDay() !== 0 && calendar.getDay() !== 6) businessDays++;
+  calendar.setDate(calendar.getDate()+1);
  }
+ const counts = {
+  daily: entries.filter(entry => entry.closed_on === today).length,
+  weekly: entries.filter(entry => entry.closed_on >= weekStart && entry.closed_on <= today).length,
+  monthly: entries.filter(entry => entry.closed_on.slice(0,7) === month).length
+ };
+ const targets = { daily:dailyTarget, weekly:dailyTarget*5, monthly:dailyTarget*businessDays };
+ for (const period of ['daily','weekly','monthly']) {
+  const target = targets[period];
+  const available = ready && Number.isFinite(target) && target > 0;
+  const progress = $(period+'-progress');
+  progress.max = available ? target : 1;
+  progress.value = available ? Math.min(counts[period],target) : 0;
+  const status = $(period+'-goal-status');
+  status.textContent = available ? counts[period]+' / '+target : 'Aguardando atualização';
+  status.parentElement.classList.toggle('goal-reached', available && counts[period]>=target);
+ }
+ $('goal-description').textContent = fixed
+  ? 'Semanal = diária × 5 · Mensal = diária × '+businessDays+' dias de segunda a sexta'
+  : variableGoal?.month === month
+   ? 'Mês anterior: '+variableGoal.tickets+' tickets / '+variableGoal.workedDays+' dias com tickets · Diária de 7 a 14'
+   : 'Aguardando histórico do mês anterior';
 }
 setInterval(render, 60000);
 
@@ -55,6 +112,7 @@ function render(){
  const weekStart = monday.getFullYear() + '-' + String(monday.getMonth()+1).padStart(2,'0') + '-' + String(monday.getDate()).padStart(2,'0');
  $('todayCount').textContent=entries.filter(e=>e.closed_on===today).length;
  $('weekCount').textContent=entries.filter(e=>e.closed_on>=weekStart && e.closed_on<=today).length;
+ $('monthCount').textContent=entries.filter(e=>e.closed_on.slice(0,7)===today.slice(0,7)).length;
  renderGoals();
  renderClosedTickets();
 }
