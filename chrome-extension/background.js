@@ -66,13 +66,13 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
 // Keep the widget at its compact size while allowing it to be moved or minimized.
 chrome.windows.onBoundsChanged.addListener(async window => {
  if (window.type !== 'popup' || window.state === 'minimized') return;
- if (window.state === 'normal' && window.width === 420 && window.height === 380) return;
+ if (window.state === 'normal' && window.width === 460 && window.height === 420) return;
  try {
   const details = await chrome.windows.get(window.id, {populate:true});
   const widgetUrl = chrome.runtime.getURL('widget.html');
   if (!details.tabs?.some(tab => tab.url === widgetUrl)) return;
   if (details.state === 'minimized') return;
-  await chrome.windows.update(window.id, {state:'normal', width:420, height:380});
+  await chrome.windows.update(window.id, {state:'normal', width:460, height:420});
  } catch {
   // The window may have been closed while its details were being loaded.
  }

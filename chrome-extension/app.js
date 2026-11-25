@@ -39,9 +39,9 @@ $('open-widget').onclick = async () => {
   const windows = await chrome.windows.getAll({populate:true, windowTypes:['popup']});
   const existing = windows.find(window => window.tabs?.some(tab => tab.url === url));
   if (existing) {
-   await chrome.windows.update(existing.id, {focused:true, state:'normal', width:420, height:380});
+   await chrome.windows.update(existing.id, {focused:true, state:'normal', width:460, height:420});
   } else {
-   await chrome.windows.create({url, type:'popup', width:420, height:380, focused:true});
+   await chrome.windows.create({url, type:'popup', width:460, height:420, focused:true});
   }
  } catch (error) {
   status.textContent = 'Não foi possível abrir o widget. ' + (error.message || String(error));
