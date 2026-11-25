@@ -31,13 +31,20 @@ registrationView.onclick = () => selectView('registration');
 countersView.onclick = () => selectView('counters');
 selectView(widgetMode || localStorage.getItem('my-work-view') === 'counters' ? 'counters' : 'registration');
 $('open-widget').onclick = async () => {
- const button = $('open-widget');
+ const button = $('open-widget'), status = $('widget-status');
  button.disabled = true;
+ status.textContent = '';
  try {
-  const result = await chrome.runtime.sendMessage({type:'MY_WORK_WIDGET'});
-  if (!result?.ok) throw Error();
- } catch {
-  showConnectionError('Não foi possível abrir o widget. Recarregue a extensão e tente novamente.');
+  const url = chrome.runtime.getURL('widget.html');
+  const windows = await chrome.windows.getAll({populate:true, windowTypes:['popup']});
+  const existing = windows.find(window => window.tabs?.some(tab => tab.url === url));
+  if (existing) {
+   await chrome.windows.update(existing.id, {focused:true, state:'normal'});
+  } else {
+   await chrome.windows.create({url, type:'popup', width:500, height:420, focused:true});
+  }
+ } catch (error) {
+  status.textContent = 'Não foi possível abrir o widget. ' + (error.message || String(error));
  } finally {
   button.disabled = false;
  }

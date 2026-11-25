@@ -50,28 +50,9 @@ async function requestMyWork({ path, method, body }) {
   }
 }
 
-let openingWidget = null;
-function openWidget() {
- if (openingWidget) return openingWidget;
- openingWidget = (async () => {
-  const url = chrome.runtime.getURL('widget.html');
-  const windows = await chrome.windows.getAll({populate:true, windowTypes:['popup']});
-  const existing = windows.find(window => window.tabs?.some(tab => tab.url === url));
-  if (existing) {
-   await chrome.windows.update(existing.id, {focused:true, state:'normal'});
-  } else {
-   await chrome.windows.create({url, type:'popup', width:500, height:420, focused:true});
-  }
- })().finally(() => { openingWidget = null; });
- return openingWidget;
-}
-
 chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (sender.id !== chrome.runtime.id || ![chrome.runtime.getURL('sidepanel.html'), chrome.runtime.getURL('widget.html')].includes(sender.url)) return;
-  if (message?.type === 'MY_WORK_WIDGET') {
-    openWidget().then(() => reply({ok:true}), () => reply(failure('Não foi possível abrir o widget.')));
-    return true;
-  }
+
   if (message?.type === 'MY_WORK_OPEN') {
     chrome.tabs.create({ url: SITE }).then(() => reply({ ok: true }), () => reply(failure('Não foi possível abrir o site.', true)));
     return true;
