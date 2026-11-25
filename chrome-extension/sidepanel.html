@@ -195,6 +195,9 @@ header { margin-bottom:6px; gap:6px; }
 .view-switch { display:flex; gap:4px; padding:3px; margin:10px 0; background:var(--soft); border-radius:8px; }
 .view-switch button { flex:1; background:transparent; color:var(--green); }
 .view-switch button[aria-pressed="true"] { background:var(--green); color:white; }
+body[data-view="registration"] .counts,
+body[data-view="registration"] .goals,
+body[data-view="registration"] #closed-tickets,
 body[data-view="counters"] .registration-content,
 body[data-view="counters"] #closed-toggle,
 body[data-view="counters"] #closed-tickets { display:none; }
