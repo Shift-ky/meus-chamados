@@ -18,17 +18,31 @@ async function api(path, method = 'GET', body) {
  }
 }
 const $ = id => document.getElementById(id);
+const widgetMode = document.body.dataset.widget === 'true';
 const registrationView = $('view-registration');
 const countersView = $('view-counters');
 function selectView(view) {
  document.body.dataset.view = view;
  registrationView.setAttribute('aria-pressed', String(view === 'registration'));
  countersView.setAttribute('aria-pressed', String(view === 'counters'));
- localStorage.setItem('my-work-view', view);
+ if (!widgetMode) localStorage.setItem('my-work-view', view);
 }
 registrationView.onclick = () => selectView('registration');
 countersView.onclick = () => selectView('counters');
-selectView(localStorage.getItem('my-work-view') === 'counters' ? 'counters' : 'registration');
+selectView(widgetMode || localStorage.getItem('my-work-view') === 'counters' ? 'counters' : 'registration');
+$('open-widget').onclick = async () => {
+ const button = $('open-widget');
+ button.disabled = true;
+ try {
+  const result = await chrome.runtime.sendMessage({type:'MY_WORK_WIDGET'});
+  if (!result?.ok) throw Error();
+ } catch {
+  showConnectionError('Não foi possível abrir o widget. Recarregue a extensão e tente novamente.');
+ } finally {
+  button.disabled = false;
+ }
+};
+if (widgetMode) setInterval(() => { if (!busy) load(); }, 60000);
 const day = () => {const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 let entries=[], user={id:"personal"}, busy=false, ready=false, loadVersion=0;
 const message=(text,error=false)=>{$('message').textContent=text;$('message').classList.toggle('error',error)};
