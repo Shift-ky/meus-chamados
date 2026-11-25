@@ -198,12 +198,11 @@ header { margin-bottom:6px; gap:6px; }
 body[data-view="registration"] .counts,
 body[data-view="registration"] .goals,
 body[data-view="registration"] #closed-tickets,
-body[data-view="counters"] .registration-content,
-body[data-view="counters"] #closed-toggle,
-body[data-view="counters"] #closed-tickets { display:none; }
+body[data-view="counters"] .registration-content { display:none; }
 body[data-view="counters"] .counts { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
 body[data-view="counters"] .count { width:100%; flex-direction:column; text-align:center; padding:16px 8px; gap:5px; }
 body[data-view="counters"] .count b { font-size:28px; }
+body[data-view="counters"] #closed-toggle { grid-column:1 / -1; justify-self:end; margin:0; }
 </style></head><body>
 <main>
   <header>
@@ -214,7 +213,7 @@ body[data-view="counters"] .count b { font-size:28px; }
   <nav class="view-switch" aria-label="Visualização da extensão"><button id="view-registration" type="button" aria-pressed="true">Registro</button><button id="view-counters" type="button" aria-pressed="false">Contadores</button></nav>
   <div id="workspace">
     <div class="counts"><div class="count"><b id="todayCount">–</b><span>fechados hoje</span></div><div class="count"><b id="weekCount">–</b><span>fechados na semana</span></div><div class="count"><b id="monthCount">–</b><span>fechados no mês</span></div><button id="closed-toggle" class="plain" type="button" aria-expanded="false" aria-controls="closed-tickets">Ver fechados</button></div>
-    <section class="card goals registration-content" aria-label="Metas de chamados fechados">
+    <section class="card goals" aria-label="Metas de chamados fechados">
  <details class="goal-settings-panel"><summary>Configurar metas</summary><div class="goal-settings"><label for="goal-mode">Meta</label><select id="goal-mode"><option value="variable">Variável</option><option value="fixed">Fixa</option></select><label id="fixed-goal-field" hidden>Tickets por dia <input id="fixed-goal" type="number" min="1" max="100000" step="1" required></label></div></details>
  <div><span>Meta diária</span><strong id="daily-goal-status" aria-live="polite"></strong><progress id="daily-progress" aria-label="Progresso da meta diária"></progress></div>
  <div><span title="Segunda a domingo">Meta semanal</span><strong id="weekly-goal-status" aria-live="polite"></strong><progress id="weekly-progress" aria-label="Progresso da meta semanal"></progress></div>
